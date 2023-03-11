@@ -7,9 +7,9 @@ pub struct Cipherer {
 
 // For now any character that is not a letter is replaced with 'x'
 fn lowercase(chr: u8) -> Option<u8> {
-    if chr >= b'a' && chr <= b'z' {
+    if (b'a'..=b'z').contains(&chr) {
         Some(chr)
-    } else if chr >= b'A' && chr <= b'Z' {
+    } else if (b'A'..=b'Z').contains(&chr) {
         Some(chr + 32)
     } else {
         None
@@ -24,7 +24,7 @@ fn get_position(chr: u8) -> usize {
             (chr_ - b'a') as usize
         }
     } else {
-        return (b'x' - b'a' - 1) as usize;
+        (b'x' - b'a' - 1) as usize
     }
 }
 
@@ -61,7 +61,7 @@ impl Cipherer {
             x.iter().for_each(|&y| {
                 eprint!("{} ", y as char);
             });
-            eprintln!("");
+            eprintln!();
         });
         Self {
             letters_mtx,
@@ -94,7 +94,7 @@ impl Cipherer {
         } else {
             let ch1 = chr1_pos / 5 * 5 + chr2_pos % 5;
             let ch2 = chr2_pos / 5 * 5 + chr1_pos % 5;
-            (self.letters_mtx[ch1 as usize], self.letters_mtx[ch2 as usize])
+            (self.letters_mtx[ch1], self.letters_mtx[ch2])
         }
     }
 }

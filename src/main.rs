@@ -33,7 +33,7 @@ impl<T: Read> PlayfairEncoder<T> {
 
     pub fn encode(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         // Trivial case - provided buffer has a length of 0
-        if buf.len() == 0 {
+        if buf.is_empty() {
             return Ok(0);
         }
 
@@ -51,7 +51,7 @@ impl<T: Read> PlayfairEncoder<T> {
 
             let internal_buf = self.reader.buffer();
 
-            if internal_buf.len() == 0 {
+            if internal_buf.is_empty() {
                 if let Some(chr) = self.carry {
                     let (x, y) = self.cipherer.cipher(chr, b'x');
                     buf[start] = x;

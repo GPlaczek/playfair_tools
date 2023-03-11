@@ -1,6 +1,10 @@
 use std::io;
+use std::io::BufRead;
 use std::io::Read;
-use std::io::Write;
+use std::io::BufReader;
+
+use std::cmp::min;
+use std::str::from_utf8;
 
 use std::fs;
 use std::env;
@@ -16,43 +20,95 @@ struct Cipherer {
 
 struct PlayfairEncoder<T: Read> {
     cipherer: Cipherer,
-    reader: T,
-    carry: Option<u8>
+    reader: BufReader<T>,
+    carry_encrypted: Option<u8>,
+    carry: Option<u8>,
 }
 
 impl<T: Read> PlayfairEncoder<T> {
     fn new(key: &str, stream: T) -> Self {
         Self {
             cipherer: Cipherer::with(key.as_bytes()),
-            reader: stream,
-            carry: None
+            reader: BufReader::new(stream),
+            carry_encrypted: None,
+            carry: None,
         }
     }
 
-    fn encode(&mut self) -> io::Result<usize> {
-        let mut buf = [0u8; 256];
-        let mut size = 0;
-        let mut lock = io::stdout().lock();
+    pub fn encode(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        // Trivial case - provided buffer has a length of 0
+        if buf.len() == 0 {
+            return Ok(0);
+        }
+
+        // There is a carry byte left after previous reads
+        let mut start = if let Some(chr) = self.carry_encrypted {
+            buf[0] = chr;
+            self.carry_encrypted = None;
+            1
+        } else { 0 };
+
         loop {
-            let size_ = self.reader.read(&mut buf)?;
-            size += size_;
-            if size_ == 0 {
-                if let Some(byte) = self.carry {
-                    let (x, y) = self.cipherer.cipher(byte, b'x');
-                    write!(lock, "{}{}", x, y)?;
+            if self.reader.buffer().is_empty() {
+                self.reader.fill_buf()?;
+            }
+
+            let internal_buf = self.reader.buffer();
+
+            if internal_buf.len() == 0 {
+                if let Some(chr) = self.carry {
+                    let (x, y) = self.cipherer.cipher(chr, b'x');
+                    buf[start] = x;
+                    if start == buf.len() - 1 {
+                        self.carry_encrypted = Some(y);
+                        return Ok(start);
+                    }
+                    buf[start+1] = y;
+                    return Ok(start + 1);
                 }
+                return Ok(start-1);
+            }
+
+            if let Some(chr) = self.carry {
+                let (x, y) = self.cipherer.cipher(chr, internal_buf[0]);
+                buf[start] = x;
+                if start == buf.len() - 1 {
+                    self.carry_encrypted = Some(y);
+                    return Ok(start);
+                }
+                buf[start + 1] = x;
+                start += 2;
+            }
+
+            let size_ = min(buf.len() - start, internal_buf.len());
+
+            let size_even = size_ - (size_ & 1);
+            for i in (0..size_even).step_by(2) {
+                let (x, y) = self.cipherer.cipher(internal_buf[i], internal_buf[i+1]);
+                buf[i+start] = x; buf[i+start + 1] = y;
+            }
+            start += size_even;
+
+            if start == buf.len() {
+                self.reader.consume(size_even);
+                return Ok(size_even);
+            }
+
+            if size_even == internal_buf.len() - 1 {
+                self.carry = Some(internal_buf[size_even]);
+                self.reader.consume(size_);
                 break;
             }
-            for i in (0..size_ - (size_ & 1)).step_by(2) {
-                let (x, y) = self.cipherer.cipher(buf[i], buf[i+1]);
-                write!(lock, "{}{}", x, y)?;
+            // length of provided buffer is odd and less or equal to internal buf lenth
+            if size_even == buf.len() - 1 && size_ < internal_buf.len() {
+                let (x, y) = self.cipherer.cipher(internal_buf[size_even], internal_buf[size_even + 1]);
+                buf[size_ - 1 + start] = x;
+                self.carry_encrypted = Some(y);
+                self.reader.consume(size_ + 1);
+                return Ok(size_);
             }
-            if size_ & 1 == 1 {
-                self.carry = Some(buf[size_-1]);
-            }
-            io::stdout().flush()?;
         }
-        return Ok(size)
+        Ok(start)
     }
 }
 
@@ -122,7 +178,11 @@ fn main() -> io::Result<()> {
         Box::new(io::stdin())
     };
     let mut enc = PlayfairEncoder::new(&args[1], reader);
-    enc.encode()?;
+    let mut buf = vec![0u8; 256];
+    enc.encode(&mut buf)?;
+    print!("{}", from_utf8(&buf).unwrap());
+    let size = enc.encode(&mut buf)?;
+    print!("{}", from_utf8(&buf[..size+1]).unwrap());
     Ok(())
 }
 

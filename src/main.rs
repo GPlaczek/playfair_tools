@@ -186,10 +186,12 @@ fn main() -> io::Result<()> {
 }
 
 #[cfg(test)]
-mod io_tests {
+mod io_tests_mock {
     const TEST_KEY: &'static str = "playfairexample";
     const CONTENT_SHORT_ODD: &'static str = "aksjdaksdjh";
+    const CONTENT_SHORT_ODD_ANS: &'static str = "pokmoenkbegm";
     const CONTENT_SHORT: &'static str = "aksjdaksdj";
+    const CONTENT_SHORT_ANS: &'static str = "pokmoenkbe";
 
     #[test]
     // Buffer is bigger than the file and the file size is odd
@@ -199,7 +201,7 @@ mod io_tests {
         let mut buf = [0u8; 64];
         let size = encoder.encode(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT_ODD.len() + 1);
-        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), "pokmoenkbegm");
+        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ODD_ANS);
     }
 
     #[test]
@@ -210,7 +212,29 @@ mod io_tests {
         let mut buf = [0u8; 64];
         let size = encoder.encode(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT.len());
-        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), "pokmoenkbe");
+        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ANS);
+    }
+
+    #[test]
+    // Buffer length is odd and it is bigger that the file
+    fn buf_odd_file() {
+        let reader = CONTENT_SHORT.as_bytes();
+        let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
+        let mut buf = [0u8; 63];
+        let size = encoder.encode(&mut buf).unwrap();
+        assert_eq!(size, CONTENT_SHORT.len() );
+        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ANS);
+    }
+
+    #[test]
+    // Buffer length is odd and it is bigger that the file
+    fn buf_odd_file_odd() {
+        let reader = CONTENT_SHORT_ODD.as_bytes();
+        let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
+        let mut buf = [0u8; 63];
+        let size = encoder.encode(&mut buf).unwrap();
+        assert_eq!(size, CONTENT_SHORT_ODD.len() + 1);
+        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ODD_ANS);
     }
 }
 

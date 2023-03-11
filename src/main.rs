@@ -99,6 +99,7 @@ impl<T: Read> PlayfairEncoder<T> {
                 self.reader.consume(size_);
                 continue;
             }
+
             // length of provided buffer is odd and less or equal to internal buf lenth
             if size_even == buf.len() - 1 && size_ < internal_buf.len() {
                 let (x, y) = self.cipherer.cipher(internal_buf[size_even], internal_buf[size_even + 1]);
@@ -107,6 +108,7 @@ impl<T: Read> PlayfairEncoder<T> {
                 self.reader.consume(size_ + 1);
                 return Ok(size_);
             }
+            self.reader.consume(size_even);
         }
     }
 }
@@ -184,7 +186,36 @@ fn main() -> io::Result<()> {
 }
 
 #[cfg(test)]
-mod tests {
+mod io_tests {
+    const TEST_KEY: &'static str = "playfairexample";
+    const CONTENT_SHORT_ODD: &'static str = "aksjdaksdjh";
+    const CONTENT_SHORT: &'static str = "aksjdaksdj";
+
+    #[test]
+    // Buffer is bigger than the file and the file size is odd
+    fn buf_file_odd() {
+        let reader = CONTENT_SHORT_ODD.as_bytes();
+        let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
+        let mut buf = [0u8; 64];
+        let size = encoder.encode(&mut buf).unwrap();
+        assert_eq!(size, CONTENT_SHORT_ODD.len() + 1);
+        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), "pokmoenkbegm");
+    }
+
+    #[test]
+    // Buffer is bigger than the file
+    fn buf_file() {
+        let reader = CONTENT_SHORT.as_bytes();
+        let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
+        let mut buf = [0u8; 64];
+        let size = encoder.encode(&mut buf).unwrap();
+        assert_eq!(size, CONTENT_SHORT.len());
+        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), "pokmoenkbe");
+    }
+}
+
+#[cfg(test)]
+mod cipher_tests {
     fn init() -> crate::Cipherer {
         crate::Cipherer::with("playfairexample".as_bytes())
     }

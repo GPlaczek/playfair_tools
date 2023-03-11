@@ -3,7 +3,7 @@ name: test
 on: push
 
 jobs:
-  test:
+  test-native:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -22,3 +22,30 @@ jobs:
         with:
           command: test
           args: --release
+  test-wasm:
+    runs-on: ubuntu-latest
+    env:
+      WASMTIME_RELEASE: v6.0.1
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Install rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-wasi
+      - name: Install wasmtime
+        run: |
+          set -ex
+          curl -L https://github.com/bytecodealliance/wasmtime/releases/download/$WASMTIME_RELEASE/wasmtime-$WASMTIME_RELEASE-x86_64-linux.tar.xz | tar xJf -
+          echo `pwd`/wasmtime-$WASMTIME_RELEASE-x86_64-linux >> $GITHUB_PATH
+      - name: Install cargo wasi
+        uses: actions-rs/cargo@v1
+        with:
+          command: install
+          args: cargo-wasi
+      - name: Test
+        uses: actions-rs/cargo@v1
+        with:
+          command: wasi
+          args: test

@@ -61,12 +61,12 @@ impl<T: Read> PlayfairEncoder<T> {
                     buf[start] = x;
                     if start == buf.len() - 1 {
                         self.carry_encrypted = Some(y);
-                        return Ok(start);
+                        return Ok(start+1);
                     }
                     buf[start+1] = y;
-                    return Ok(start + 1);
+                    return Ok(start+2);
                 }
-                return Ok(start-1);
+                return Ok(start);
             }
 
             if let Some(chr) = self.carry {
@@ -97,7 +97,7 @@ impl<T: Read> PlayfairEncoder<T> {
             if size_even == internal_buf.len() - 1 {
                 self.carry = Some(internal_buf[size_even]);
                 self.reader.consume(size_);
-                break;
+                continue;
             }
             // length of provided buffer is odd and less or equal to internal buf lenth
             if size_even == buf.len() - 1 && size_ < internal_buf.len() {
@@ -108,7 +108,6 @@ impl<T: Read> PlayfairEncoder<T> {
                 return Ok(size_);
             }
         }
-        Ok(start)
     }
 }
 
@@ -179,10 +178,8 @@ fn main() -> io::Result<()> {
     };
     let mut enc = PlayfairEncoder::new(&args[1], reader);
     let mut buf = vec![0u8; 256];
-    enc.encode(&mut buf)?;
-    print!("{}", from_utf8(&buf).unwrap());
-    let size = enc.encode(&mut buf)?;
-    print!("{}", from_utf8(&buf[..size+1]).unwrap());
+    let len = enc.encode(&mut buf)?;
+    print!("{} {}", len, from_utf8(&buf).unwrap());
     Ok(())
 }
 

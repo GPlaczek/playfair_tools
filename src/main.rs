@@ -29,8 +29,9 @@ impl<T: Read> PlayfairEncoder<T> {
             carry: None,
         }
     }
-
-    pub fn encode(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+}
+impl<T: Read> Read for PlayfairEncoder<T> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         // Trivial case - provided buffer has a length of 0
         if buf.is_empty() {
             return Ok(0);
@@ -133,13 +134,14 @@ fn main() -> io::Result<()> {
     };
     let mut enc = PlayfairEncoder::new(&args[1], reader);
     let mut buf = vec![0u8; 256];
-    enc.encode(&mut buf)?;
-    print!("{}", from_utf8(&buf).unwrap());
+    let len = enc.read(&mut buf)?;
+    print!("{}", from_utf8(&buf[..len]).unwrap());
     Ok(())
 }
 
 #[cfg(test)]
 mod io_tests_mock {
+    use std::io::Read;
     const TEST_KEY: &'static str = "playfairexample";
     const CONTENT_SHORT_ODD: &'static str = "aksjdaksdjh";
     const CONTENT_SHORT_ODD_ANS: &'static str = "pokmoenkbegm";
@@ -152,7 +154,7 @@ mod io_tests_mock {
         let reader = CONTENT_SHORT_ODD.as_bytes();
         let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
         let mut buf = [0u8; 64];
-        let size = encoder.encode(&mut buf).unwrap();
+        let size = encoder.read(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT_ODD.len() + 1);
         assert_eq!(
             std::str::from_utf8(&buf[..size]).unwrap(),
@@ -166,7 +168,7 @@ mod io_tests_mock {
         let reader = CONTENT_SHORT.as_bytes();
         let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
         let mut buf = [0u8; 64];
-        let size = encoder.encode(&mut buf).unwrap();
+        let size = encoder.read(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT.len());
         assert_eq!(
             std::str::from_utf8(&buf[..size]).unwrap(),
@@ -180,7 +182,7 @@ mod io_tests_mock {
         let reader = CONTENT_SHORT.as_bytes();
         let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
         let mut buf = [0u8; 63];
-        let size = encoder.encode(&mut buf).unwrap();
+        let size = encoder.read(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT.len());
         assert_eq!(
             std::str::from_utf8(&buf[..size]).unwrap(),
@@ -194,7 +196,7 @@ mod io_tests_mock {
         let reader = CONTENT_SHORT_ODD.as_bytes();
         let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
         let mut buf = [0u8; 63];
-        let size = encoder.encode(&mut buf).unwrap();
+        let size = encoder.read(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT_ODD.len() + 1);
         assert_eq!(
             std::str::from_utf8(&buf[..size]).unwrap(),

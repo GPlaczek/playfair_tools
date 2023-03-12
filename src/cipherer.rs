@@ -134,8 +134,9 @@ impl Cipherer {
 
 #[cfg(test)]
 mod cipher_tests {
-    fn init() -> crate::Cipherer {
-        crate::Cipherer::with("playfairexample".as_bytes())
+    use crate::cipherer::Cipherer;
+    fn init() -> Cipherer {
+        Cipherer::with("playfairexample".as_bytes())
     }
 
     #[test]

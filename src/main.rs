@@ -2,14 +2,14 @@ mod cipherer;
 
 use std::io;
 use std::io::BufRead;
-use std::io::Read;
 use std::io::BufReader;
+use std::io::Read;
 
 use std::cmp::min;
 use std::str::from_utf8;
 
-use std::fs;
 use std::env;
+use std::fs;
 use std::iter::Iterator;
 
 use cipherer::Cipherer;
@@ -42,7 +42,9 @@ impl<T: Read> PlayfairEncoder<T> {
             buf[0] = chr;
             self.carry_encrypted = None;
             1
-        } else { 0 };
+        } else {
+            0
+        };
 
         loop {
             if self.reader.buffer().is_empty() {
@@ -57,10 +59,10 @@ impl<T: Read> PlayfairEncoder<T> {
                     buf[start] = x;
                     if start == buf.len() - 1 {
                         self.carry_encrypted = Some(y);
-                        return Ok(start+1);
+                        return Ok(start + 1);
                     }
-                    buf[start+1] = y;
-                    return Ok(start+2);
+                    buf[start + 1] = y;
+                    return Ok(start + 2);
                 }
                 return Ok(start);
             }
@@ -80,8 +82,9 @@ impl<T: Read> PlayfairEncoder<T> {
 
             let size_even = size_ - (size_ & 1);
             for i in (0..size_even).step_by(2) {
-                let (x, y) = self.cipherer.cipher(internal_buf[i], internal_buf[i+1]);
-                buf[i+start] = x; buf[i+start + 1] = y;
+                let (x, y) = self.cipherer.cipher(internal_buf[i], internal_buf[i + 1]);
+                buf[i + start] = x;
+                buf[i + start + 1] = y;
             }
             start += size_even;
 
@@ -98,7 +101,9 @@ impl<T: Read> PlayfairEncoder<T> {
 
             // length of provided buffer is odd and less or equal to internal buf lenth
             if size_even == buf.len() - 1 && size_ < internal_buf.len() {
-                let (x, y) = self.cipherer.cipher(internal_buf[size_even], internal_buf[size_even + 1]);
+                let (x, y) = self
+                    .cipherer
+                    .cipher(internal_buf[size_even], internal_buf[size_even + 1]);
                 buf[size_ - 1 + start] = x;
                 self.carry_encrypted = Some(y);
                 self.reader.consume(size_ + 1);
@@ -108,7 +113,6 @@ impl<T: Read> PlayfairEncoder<T> {
         }
     }
 }
-
 
 fn main() -> io::Result<()> {
     let args = env::args().collect::<Vec<String>>();
@@ -140,7 +144,10 @@ mod io_tests_mock {
         let mut buf = [0u8; 64];
         let size = encoder.encode(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT_ODD.len() + 1);
-        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ODD_ANS);
+        assert_eq!(
+            std::str::from_utf8(&buf[..size]).unwrap(),
+            CONTENT_SHORT_ODD_ANS
+        );
     }
 
     #[test]
@@ -151,7 +158,10 @@ mod io_tests_mock {
         let mut buf = [0u8; 64];
         let size = encoder.encode(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT.len());
-        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ANS);
+        assert_eq!(
+            std::str::from_utf8(&buf[..size]).unwrap(),
+            CONTENT_SHORT_ANS
+        );
     }
 
     #[test]
@@ -161,8 +171,11 @@ mod io_tests_mock {
         let mut encoder = crate::PlayfairEncoder::new(TEST_KEY, reader);
         let mut buf = [0u8; 63];
         let size = encoder.encode(&mut buf).unwrap();
-        assert_eq!(size, CONTENT_SHORT.len() );
-        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ANS);
+        assert_eq!(size, CONTENT_SHORT.len());
+        assert_eq!(
+            std::str::from_utf8(&buf[..size]).unwrap(),
+            CONTENT_SHORT_ANS
+        );
     }
 
     #[test]
@@ -173,6 +186,9 @@ mod io_tests_mock {
         let mut buf = [0u8; 63];
         let size = encoder.encode(&mut buf).unwrap();
         assert_eq!(size, CONTENT_SHORT_ODD.len() + 1);
-        assert_eq!(std::str::from_utf8(&buf[..size]).unwrap(), CONTENT_SHORT_ODD_ANS);
+        assert_eq!(
+            std::str::from_utf8(&buf[..size]).unwrap(),
+            CONTENT_SHORT_ODD_ANS
+        );
     }
 }

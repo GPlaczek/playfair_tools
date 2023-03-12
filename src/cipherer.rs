@@ -2,7 +2,7 @@ const EMPTY: usize = 25usize;
 
 pub struct Cipherer {
     letters_mtx: [u8; 25],
-    positions_mtx: [usize; 25]
+    positions_mtx: [usize; 25],
 }
 
 // For now any character that is not a letter is replaced with 'x'
@@ -54,7 +54,7 @@ impl Cipherer {
             }
             letters_mtx[c] = chr;
             positions_mtx[ind] = c;
-            c+=1;
+            c += 1;
         }
         #[cfg(debug_assertions)]
         letters_mtx.chunks(5).for_each(|x| {
@@ -65,7 +65,7 @@ impl Cipherer {
         });
         Self {
             letters_mtx,
-            positions_mtx
+            positions_mtx,
         }
     }
 
@@ -94,7 +94,10 @@ impl Cipherer {
         } else {
             let ch1 = chr1_pos / 5 * 5 + chr2_pos % 5;
             let ch2 = chr2_pos / 5 * 5 + chr1_pos % 5;
-            (self.letters_mtx[ch1 as usize], self.letters_mtx[ch2 as usize])
+            (
+                self.letters_mtx[ch1 as usize],
+                self.letters_mtx[ch2 as usize],
+            )
         }
     }
 }

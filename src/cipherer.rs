@@ -139,6 +139,15 @@ mod cipher_tests {
     }
 
     #[test]
+    fn duplicate_tests() {
+        let cipherer = init();
+        assert_eq!(cipherer.cipher(b'x', b'x').unwrap(), (b'g', b'w'));
+        assert_eq!(cipherer.cipher(b'r', b'r').unwrap(), (b'e', b'm'));
+        assert_eq!(cipherer.cipher(b'n', b'n').unwrap(), (b'q', b'r'));
+        assert_eq!(cipherer.cipher(b'q', b'q').unwrap(), (b'w', b'g'));
+    }
+
+    #[test]
     fn rectangle_tests() {
         let cipherer = init();
         assert_eq!(cipherer.cipher(b'o', b'l').unwrap(), (b'n', b'a'));

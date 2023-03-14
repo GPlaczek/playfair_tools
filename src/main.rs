@@ -1,12 +1,12 @@
 mod cipherer;
-mod encoder;
+mod stream;
 
 use std::fs;
 use std::io;
 use std::io::Read;
 use std::str::from_utf8;
 
-use encoder::{PlayfairDecoder, PlayfairEncoder};
+use crate::stream::{PlayfairDecoder, PlayfairEncoder};
 
 use clap::Parser;
 

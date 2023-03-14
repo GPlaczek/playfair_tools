@@ -1,23 +1,14 @@
+mod decoder;
+mod encoder;
+
 use crate::cipherer::Cipherer;
 use std::io;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
 
-pub struct PlayfairEncoder<T: Read>(Playfair<T>);
-pub struct PlayfairDecoder<T: Read>(Playfair<T>);
-
-impl<T: Read> PlayfairEncoder<T> {
-    pub fn new(key: &str, stream: T) -> Self {
-        Self(Playfair::new(key, stream))
-    }
-}
-
-impl<T: Read> PlayfairDecoder<T> {
-    pub fn new(key: &str, stream: T) -> Self {
-        Self(Playfair::new(key, stream))
-    }
-}
+pub use self::encoder::PlayfairEncoder;
+pub use self::decoder::PlayfairDecoder;
 
 struct Playfair<T: Read> {
     cipherer: Cipherer,
@@ -34,18 +25,6 @@ impl<T: Read> Playfair<T> {
             carry_encrypted: None,
             carry: None,
         }
-    }
-}
-
-impl<T: Read> Read for PlayfairEncoder<T> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.__read(buf, false)
-    }
-}
-
-impl<T: Read> Read for PlayfairDecoder<T> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.0.__read(buf, true)
     }
 }
 

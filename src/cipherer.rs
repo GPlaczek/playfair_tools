@@ -74,13 +74,6 @@ impl Cipherer {
             positions_mtx[ind] = c;
             c += 1;
         }
-        #[cfg(debug_assertions)]
-        letters_mtx.chunks(5).for_each(|x| {
-            x.iter().for_each(|&y| {
-                eprint!("{} ", y as char);
-            });
-            eprintln!();
-        });
         Self {
             letters_mtx,
             positions_mtx,

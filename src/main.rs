@@ -10,7 +10,7 @@ use std::fs;
 
 use std::str::from_utf8;
 
-use encoder::PlayfairEncoder;
+use encoder::PlayfairDecoder;
 
 fn main() -> io::Result<()> {
     let args = env::args().collect::<Vec<String>>();
@@ -19,7 +19,7 @@ fn main() -> io::Result<()> {
     } else {
         Box::new(io::stdin())
     };
-    let mut enc = PlayfairEncoder::new(&args[1], reader);
+    let mut enc = PlayfairDecoder::new(&args[1], reader);
     let mut buf = vec![0u8; 256];
     let len = enc.read(&mut buf)?;
     print!("{}", from_utf8(&buf[..len]).unwrap());

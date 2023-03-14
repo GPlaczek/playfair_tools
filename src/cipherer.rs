@@ -87,7 +87,8 @@ impl Cipherer {
         }
     }
 
-    pub fn cipher(&self, chr1: u8, chr2: u8) -> PlayfairOutcome {
+    pub fn cipher(&self, chr1: u8, chr2: u8, reverse: bool) -> PlayfairOutcome {
+        let rev: isize = if reverse { -1 } else { 1 };
         let chr1_pos = self.positions_mtx[get_position(chr1)];
 
         let chr2_pos_ = self.positions_mtx[get_position(chr2)];
@@ -103,19 +104,19 @@ impl Cipherer {
         // same row
         let tuple = if chr1_pos / 5 == chr2_pos / 5 {
             let letter = |chr_pos: usize| -> u8 {
-                self.letters_mtx[if (chr_pos + 1) / 5 != chr_pos / 5 {
-                    chr_pos - 4
+                self.letters_mtx[if ((chr_pos as isize + rev) as usize) / 5 != chr_pos / 5 {
+                    (chr_pos as isize - 4 * rev) as usize
                 } else {
-                    chr_pos + 1
+                    (chr_pos as isize + rev) as usize
                 }]
             };
             (letter(chr1_pos), letter(chr2_pos))
         } else if chr1_pos % 5 == chr2_pos % 5 {
             let letter = |chr_pos: usize| -> u8 {
-                self.letters_mtx[if chr_pos + 5 > 24 {
-                    chr_pos - 20
+                self.letters_mtx[if (chr_pos as isize + 5 * rev) as usize > 24 {
+                    (chr_pos as isize - 20 * rev) as usize
                 } else {
-                    chr_pos + 5
+                    (chr_pos as isize + 5 * rev) as usize
                 }]
             };
             (letter(chr1_pos), letter(chr2_pos))
@@ -142,40 +143,40 @@ mod cipher_tests {
     #[test]
     fn duplicate_tests() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'x', b'x').unwrap(), (b'g', b'w'));
-        assert_eq!(cipherer.cipher(b'r', b'r').unwrap(), (b'e', b'm'));
-        assert_eq!(cipherer.cipher(b'n', b'n').unwrap(), (b'q', b'r'));
-        assert_eq!(cipherer.cipher(b'q', b'q').unwrap(), (b'w', b'g'));
+        assert_eq!(cipherer.cipher(b'x', b'x', false).unwrap(), (b'g', b'w'));
+        assert_eq!(cipherer.cipher(b'r', b'r', false).unwrap(), (b'e', b'm'));
+        assert_eq!(cipherer.cipher(b'n', b'n', false).unwrap(), (b'q', b'r'));
+        assert_eq!(cipherer.cipher(b'q', b'q', false).unwrap(), (b'w', b'g'));
     }
 
     #[test]
     fn rectangle_tests() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'o', b'l').unwrap(), (b'n', b'a'));
-        assert_eq!(cipherer.cipher(b'e', b'g').unwrap(), (b'x', b'd'));
-        assert_eq!(cipherer.cipher(b't', b'h').unwrap(), (b'z', b'b'));
-        assert_eq!(cipherer.cipher(b'h', b'i').unwrap(), (b'b', b'm'));
+        assert_eq!(cipherer.cipher(b'o', b'l', false).unwrap(), (b'n', b'a'));
+        assert_eq!(cipherer.cipher(b'e', b'g', false).unwrap(), (b'x', b'd'));
+        assert_eq!(cipherer.cipher(b't', b'h', false).unwrap(), (b'z', b'b'));
+        assert_eq!(cipherer.cipher(b'h', b'i', false).unwrap(), (b'b', b'm'));
     }
 
     #[test]
     fn same_row_tests() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'p', b'l').unwrap(), (b'l', b'a'));
-        assert_eq!(cipherer.cipher(b'y', b'f').unwrap(), (b'f', b'p'));
-        assert_eq!(cipherer.cipher(b'y', b'f').unwrap(), (b'f', b'p'));
-        assert_eq!(cipherer.cipher(b'a', b'f').unwrap(), (b'y', b'p'));
-        assert_eq!(cipherer.cipher(b'k', b's').unwrap(), (b'n', b'k'));
-        assert_eq!(cipherer.cipher(b'u', b'z').unwrap(), (b'v', b't'));
+        assert_eq!(cipherer.cipher(b'p', b'l', false).unwrap(), (b'l', b'a'));
+        assert_eq!(cipherer.cipher(b'y', b'f', false).unwrap(), (b'f', b'p'));
+        assert_eq!(cipherer.cipher(b'y', b'f', false).unwrap(), (b'f', b'p'));
+        assert_eq!(cipherer.cipher(b'a', b'f', false).unwrap(), (b'y', b'p'));
+        assert_eq!(cipherer.cipher(b'k', b's', false).unwrap(), (b'n', b'k'));
+        assert_eq!(cipherer.cipher(b'u', b'z', false).unwrap(), (b'v', b't'));
     }
 
     #[test]
     fn same_column_test() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'p', b'i').unwrap(), (b'i', b'b'));
-        assert_eq!(cipherer.cipher(b'b', b't').unwrap(), (b'k', b'p'));
-        assert_eq!(cipherer.cipher(b'e', b'd').unwrap(), (b'd', b'o'));
-        assert_eq!(cipherer.cipher(b'f', b's').unwrap(), (b'm', b'z'));
-        assert_eq!(cipherer.cipher(b'n', b'u').unwrap(), (b'u', b'l'));
-        assert_eq!(cipherer.cipher(b'x', b'w').unwrap(), (b'g', b'y'));
+        assert_eq!(cipherer.cipher(b'p', b'i', false).unwrap(), (b'i', b'b'));
+        assert_eq!(cipherer.cipher(b'b', b't', false).unwrap(), (b'k', b'p'));
+        assert_eq!(cipherer.cipher(b'e', b'd', false).unwrap(), (b'd', b'o'));
+        assert_eq!(cipherer.cipher(b'f', b's', false).unwrap(), (b'm', b'z'));
+        assert_eq!(cipherer.cipher(b'n', b'u', false).unwrap(), (b'u', b'l'));
+        assert_eq!(cipherer.cipher(b'x', b'w', false).unwrap(), (b'g', b'y'));
     }
 }

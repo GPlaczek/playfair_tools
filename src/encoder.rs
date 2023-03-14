@@ -4,14 +4,29 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
 
-pub struct PlayfairEncoder<T: Read> {
+pub struct PlayfairEncoder<T: Read>(Playfair<T>);
+pub struct PlayfairDecoder<T: Read>(Playfair<T>);
+
+impl<T: Read> PlayfairEncoder<T> {
+    pub fn new(key: &str, stream: T) -> Self {
+        Self(Playfair::new(key, stream))
+    }
+}
+
+impl<T: Read> PlayfairDecoder<T> {
+    pub fn new(key: &str, stream: T) -> Self {
+        Self(Playfair::new(key, stream))
+    }
+}
+
+struct Playfair<T: Read> {
     cipherer: Cipherer,
     reader: BufReader<T>,
     carry_encrypted: Option<u8>,
     carry: Option<u8>,
 }
 
-impl<T: Read> PlayfairEncoder<T> {
+impl<T: Read> Playfair<T> {
     pub fn new(key: &str, stream: T) -> Self {
         Self {
             cipherer: Cipherer::with(key.as_bytes()),
@@ -24,6 +39,18 @@ impl<T: Read> PlayfairEncoder<T> {
 
 impl<T: Read> Read for PlayfairEncoder<T> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.__read(buf, false)
+    }
+}
+
+impl<T: Read> Read for PlayfairDecoder<T> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        self.0.__read(buf, true)
+    }
+}
+
+impl<T: Read> Playfair<T> {
+    fn __read(&mut self, buf: &mut [u8], decode: bool) -> io::Result<usize> {
         // Trivial case - provided buffer has a length of 0
         if buf.is_empty() {
             return Ok(0);
@@ -51,7 +78,7 @@ impl<T: Read> Read for PlayfairEncoder<T> {
                     // the carry character is x and it is the last character in the stream.
                     // Handling this case in the normal manner would lead to an infinite loop
                     // x -> xx -> xqx -> x -> xx -> xqx -> ...
-                    let (x, y) = self.cipherer.cipher(chr, b'x').unwrap();
+                    let (x, y) = self.cipherer.cipher(chr, b'x', decode).unwrap();
                     buf[written] = x;
                     if written == buf.len() - 1 {
                         self.carry_encrypted = Some(y);
@@ -64,7 +91,7 @@ impl<T: Read> Read for PlayfairEncoder<T> {
             }
 
             if let Some(chr) = self.carry {
-                let outcome = self.cipherer.cipher(chr, internal_buf[0]);
+                let outcome = self.cipherer.cipher(chr, internal_buf[0], decode);
                 let (x, y) = outcome.unwrap();
                 if !outcome.is_duplicate() {
                     consumed += 1;
@@ -80,9 +107,11 @@ impl<T: Read> Read for PlayfairEncoder<T> {
             }
 
             while written < buf.len() - 1 && consumed < internal_buf.len() - 1 {
-                let outcome = self
-                    .cipherer
-                    .cipher(internal_buf[consumed], internal_buf[consumed + 1]);
+                let outcome = self.cipherer.cipher(
+                    internal_buf[consumed],
+                    internal_buf[consumed + 1],
+                    decode,
+                );
                 let (x, y) = outcome.unwrap();
                 buf[written] = x;
                 buf[written + 1] = y;
@@ -103,9 +132,11 @@ impl<T: Read> Read for PlayfairEncoder<T> {
 
             // length of provided buffer is odd and less or equal to internal buf lenth
             if written == buf.len() - 1 && consumed < internal_buf.len() {
-                let outcome = self
-                    .cipherer
-                    .cipher(internal_buf[consumed], internal_buf[consumed + 1]);
+                let outcome = self.cipherer.cipher(
+                    internal_buf[consumed],
+                    internal_buf[consumed + 1],
+                    decode,
+                );
                 self.reader.consume(consumed + 2);
                 let (x, y) = outcome.unwrap();
                 buf[written] = x;

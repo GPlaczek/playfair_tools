@@ -1,5 +1,6 @@
 const EMPTY: usize = 25usize;
 
+#[derive(PartialEq, Debug)]
 pub enum PlayfairOutcome {
     Normal((u8, u8)),
     Duplicate((u8, u8)),
@@ -128,7 +129,7 @@ impl Cipherer {
 
 #[cfg(test)]
 mod cipher_tests {
-    use crate::cipherer::Cipherer;
+    use crate::cipherer::{Cipherer, PlayfairOutcome};
     fn init() -> Cipherer {
         Cipherer::with("playfairexample".as_bytes())
     }
@@ -136,40 +137,84 @@ mod cipher_tests {
     #[test]
     fn duplicate_tests() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'x', b'x', false).unwrap(), (b'g', b'w'));
-        assert_eq!(cipherer.cipher(b'r', b'r', false).unwrap(), (b'e', b'm'));
-        assert_eq!(cipherer.cipher(b'n', b'n', false).unwrap(), (b'q', b'r'));
-        assert_eq!(cipherer.cipher(b'q', b'q', false).unwrap(), (b'w', b'g'));
+        // Ciphering and deciphering identical pairs is not symmetrical
+        // I'm 99% sure it is impossible to get an identical pair after
+        // ciphering so we won't test it
+        assert_eq!(
+            cipherer.cipher(b'x', b'x', false),
+            PlayfairOutcome::Duplicate((b'g', b'w'))
+        );
+        assert_eq!(
+            cipherer.cipher(b'r', b'r', false),
+            PlayfairOutcome::Duplicate((b'e', b'm'))
+        );
+        assert_eq!(
+            cipherer.cipher(b'n', b'n', false),
+            PlayfairOutcome::Duplicate((b'q', b'r'))
+        );
+        assert_eq!(
+            cipherer.cipher(b'q', b'q', false),
+            PlayfairOutcome::Duplicate((b'w', b'g'))
+        );
     }
 
     #[test]
     fn rectangle_tests() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'o', b'l', false).unwrap(), (b'n', b'a'));
-        assert_eq!(cipherer.cipher(b'e', b'g', false).unwrap(), (b'x', b'd'));
-        assert_eq!(cipherer.cipher(b't', b'h', false).unwrap(), (b'z', b'b'));
-        assert_eq!(cipherer.cipher(b'h', b'i', false).unwrap(), (b'b', b'm'));
+        [
+            (b'o', b'l', b'n', b'a'),
+            (b't', b'h', b'z', b'b'),
+            (b'e', b'g', b'x', b'd'),
+            (b'h', b'i', b'b', b'm'),
+        ]
+        .iter()
+        .for_each(|&(a, b, c, d)| {
+            assert_eq!(
+                cipherer.cipher(a, b, false),
+                PlayfairOutcome::Normal((c, d))
+            );
+            assert_eq!(cipherer.cipher(c, d, true), PlayfairOutcome::Normal((a, b)));
+        })
     }
 
     #[test]
     fn same_row_tests() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'p', b'l', false).unwrap(), (b'l', b'a'));
-        assert_eq!(cipherer.cipher(b'y', b'f', false).unwrap(), (b'f', b'p'));
-        assert_eq!(cipherer.cipher(b'y', b'f', false).unwrap(), (b'f', b'p'));
-        assert_eq!(cipherer.cipher(b'a', b'f', false).unwrap(), (b'y', b'p'));
-        assert_eq!(cipherer.cipher(b'k', b's', false).unwrap(), (b'n', b'k'));
-        assert_eq!(cipherer.cipher(b'u', b'z', false).unwrap(), (b'v', b't'));
+        [
+            (b'p', b'l', b'l', b'a'),
+            (b'y', b'f', b'f', b'p'),
+            (b'a', b'f', b'y', b'p'),
+            (b'k', b's', b'n', b'k'),
+            (b'u', b'z', b'v', b't'),
+        ]
+        .iter()
+        .for_each(|&(a, b, c, d)| {
+            assert_eq!(
+                cipherer.cipher(a, b, false),
+                PlayfairOutcome::Normal((c, d))
+            );
+            assert_eq!(cipherer.cipher(c, d, true), PlayfairOutcome::Normal((a, b)));
+        })
     }
 
     #[test]
     fn same_column_test() {
         let cipherer = init();
-        assert_eq!(cipherer.cipher(b'p', b'i', false).unwrap(), (b'i', b'b'));
-        assert_eq!(cipherer.cipher(b'b', b't', false).unwrap(), (b'k', b'p'));
-        assert_eq!(cipherer.cipher(b'e', b'd', false).unwrap(), (b'd', b'o'));
-        assert_eq!(cipherer.cipher(b'f', b's', false).unwrap(), (b'm', b'z'));
-        assert_eq!(cipherer.cipher(b'n', b'u', false).unwrap(), (b'u', b'l'));
-        assert_eq!(cipherer.cipher(b'x', b'w', false).unwrap(), (b'g', b'y'));
+        [
+            (b'p', b'i', b'i', b'b'),
+            (b'b', b't', b'k', b'p'),
+            (b'e', b'd', b'd', b'o'),
+            (b'f', b's', b'm', b'z'),
+            (b'n', b'u', b'u', b'l'),
+            (b'x', b'w', b'g', b'y'),
+        ]
+        .iter()
+        .for_each(|&(a, b, c, d)| {
+            assert_eq!(
+                cipherer.cipher(a, b, false),
+                PlayfairOutcome::Normal((c, d))
+            );
+            assert_eq!(cipherer.cipher(c, d, true), PlayfairOutcome::Normal((a, b)));
+        })
     }
 }
